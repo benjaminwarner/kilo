@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -13,7 +14,13 @@
 
 /*** data ***/
 
-struct termios original_terminal;
+struct editor_config {
+	int screenrows;
+	int screencols;
+	struct termios original_terminal;
+};
+
+struct editor_config config;
 
 /*** function defs ***/
 
@@ -30,15 +37,15 @@ void die(const char *s) {
 }
 
 void disable_raw_mode() {
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_terminal) == -1)
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &config.original_terminal) == -1)
 		die("tcsetattr with disabling raw mode");
 }
 
 void enable_raw_mode() {
-	if (tcgetattr(STDIN_FILENO, &original_terminal) == -1)
+	if (tcgetattr(STDIN_FILENO, &config.original_terminal) == -1)
 		die("tcgetattr");
 
-	struct termios raw = original_terminal;
+	struct termios raw = config.original_terminal;
 	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
 	raw.c_oflag &= ~(OPOST);
 	raw.c_cflag |= (CS8);
@@ -60,10 +67,21 @@ char editor_read_key() {
 	return c;
 }
 
+int get_window_size(int *rows, int *cols) {
+	struct winsize ws;
+
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
+		return -1;
+	 
+	*cols = ws.ws_col;
+	*rows = ws.ws_row;
+	return 0;
+}
+
 /*** output ***/
 
 void editor_draw_rows() {
-	for (int y = 0; y < 24; y++) {
+	for (int y = 0; y < config.screenrows; y++) {
 		write(STDOUT_FILENO, "~\r\n", 3);
 	}
 }
@@ -93,9 +111,15 @@ void editor_process_keypress() {
 
 /*** init ***/
 
+void init_editor() {
+	if (get_window_size(&config.screenrows, &config.screencols) == -1)
+		die("get_window_size");
+}
+
 int main(int argc, char *argv[]) {
 	enable_raw_mode();
 	atexit(disable_raw_mode);
+	init_editor();
 
 	while (1) {
 		editor_refresh_screen();
