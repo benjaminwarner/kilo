@@ -7,8 +7,9 @@
 #include <termios.h>
 #include <unistd.h>
 
-// this is following a text editor learning project
-// which can be found here: https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html
+/*** defines ***/
+
+#define CTRL_KEY(k) ((k) & 0x1f)
 
 /*** data ***/
 
@@ -56,7 +57,7 @@ int main(int argc, char *argv[]) {
 			printf("%d\r\n", c);
 		else
 			printf("%d ('%c')\r\n", c, c);
-		if (c == 'q')
+		if (c == CTRL_KEY('q'))
 			break;
 	}
 	return 0;
