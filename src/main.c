@@ -16,6 +16,13 @@
 #define VERSION_PATCH 1
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+enum editor_key {
+	ARROW_LEFT = 1000,
+	ARROW_RIGHT,
+	ARROW_UP,
+	ARROW_DOWN
+};
+
 /*** data ***/
 
 struct editor_config {
@@ -62,7 +69,7 @@ void enable_raw_mode() {
 		die("tcsetattr");
 }
 
-char editor_read_key() {
+int editor_read_key() {
 	int nread;
 	char c;
 	while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
@@ -78,10 +85,10 @@ char editor_read_key() {
 
 		if (seq[0] == '[') {
 			switch (seq[1]) {
-				case 'A': return 'w';
-				case 'B': return 's';
-				case 'C': return 'd';
-				case 'D': return 'a';
+				case 'A': return ARROW_UP;
+				case 'B': return ARROW_DOWN;
+				case 'C': return ARROW_RIGHT;
+				case 'D': return ARROW_LEFT;
 			}
 		}
 	}
@@ -204,25 +211,25 @@ void editor_refresh_screen() {
 
 /*** input ***/
 
-void editor_move_cursor(char key) {
+void editor_move_cursor(int key) {
 	switch (key) {
-		case 'a':
+		case ARROW_LEFT:
 			--config.cx;
 			break;
-		case 'd':
+		case ARROW_RIGHT:
 			++config.cx;
 			break;
-		case 'w':
+		case ARROW_UP:
 			--config.cy;
 			break;
-		case 's':
+		case ARROW_DOWN:
 			++config.cy;
 			break;
 	}
 }
 
 void editor_process_keypress() {
-	char c = editor_read_key();
+	int c = editor_read_key();
 
 	switch (c) {
 		case CTRL_KEY('q'):
@@ -231,10 +238,10 @@ void editor_process_keypress() {
 			exit(0);
 			break;
 
-		case 'a':
-		case 'd':
-		case 'w':
-		case 's':
+		case ARROW_UP:
+		case ARROW_DOWN:
+		case ARROW_RIGHT:
+		case ARROW_LEFT:
 			editor_move_cursor(c);
 			break;
 	}
