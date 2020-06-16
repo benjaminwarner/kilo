@@ -193,6 +193,10 @@ void editor_move_cursor(int key) {
 		case ARROW_RIGHT:
 			if (row && config.cx < row->size)
 				++config.cx;
+			else if (row && config.cx == row->size) {
+				++config.cy;
+				config.cx = 0;
+			}
 			break;
 		case ARROW_UP:
 			if (config.cy != 0)
