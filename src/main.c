@@ -180,13 +180,15 @@ void editor_open(char *filename) {
 /*** input ***/
 
 void editor_move_cursor(int key) {
+	erow *row = (config.cy >= config.numrows) ? NULL : &config.row[config.cy];
 	switch (key) {
 		case ARROW_LEFT:
 			if (config.cx != 0)
 				--config.cx;
 			break;
 		case ARROW_RIGHT:
-			++config.cx;
+			if (row && config.cx < row->size)
+				++config.cx;
 			break;
 		case ARROW_UP:
 			if (config.cy != 0)
@@ -197,6 +199,11 @@ void editor_move_cursor(int key) {
 				++config.cy;
 			break;
 	}
+
+	row = (config.cy >= config.numrows) ? NULL : &config.row[config.cy];
+	int rowlen = row ? row->size : 0;
+	if (config.cx > rowlen)
+		config.cx = rowlen;
 }
 
 void editor_process_keypress() {
