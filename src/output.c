@@ -31,7 +31,7 @@ void editor_draw_rows(struct abuf *ab, struct editor_config *config) {
 			if (len > config->screencols)
 				len = config->screencols;
 			ab_append(ab, config->row.chars, len);
-		} else if (y == version_line_row) {
+		} else if (y == version_line_row && config->numrows == 0) {
 			editor_draw_version_row(ab, config);
 		} else {
 			ab_append(ab, "~", 1);
