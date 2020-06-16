@@ -146,6 +146,19 @@ int get_window_size(int *rows, int *cols) {
 	return 0;
 }
 
+/*** row operations ***/
+
+void editor_append_row(char *s, size_t len) {
+	config.row = realloc(config.row, sizeof(erow) * (config.numrows + 1));
+
+	int at = config.numrows;
+	config.row[at].size = len;
+	config.row[at].chars = malloc(len + 1);
+	memcpy(config.row[at].chars, s, len);
+	config.row[at].chars[len] = '\0';
+	++config.numrows;
+}
+
 /*** file i/o ***/
 
 void editor_open(char *filename) {
@@ -155,15 +168,10 @@ void editor_open(char *filename) {
 	char *line = NULL;
 	size_t linecap = 0;
 	ssize_t linelen;
-	linelen = getline(&line, &linecap, fp);
-	if (linelen != -1) {
-		while (linelen > 0 && (line[linelen - 1] == '\n' || line[linelen - 1] == '\r'))
+	while ((linelen = getline(&line, &linecap, fp)) != -1) {
+		while (linelen > 0 && (line[linelen-1] == '\n' || line[linelen-1] == '\r'))
 			--linelen;
-		config.row.size = linelen;
-		config.row.chars = malloc(linelen + 1);
-		memcpy(config.row.chars, line, linelen);
-		config.row.chars[linelen] = '\0';
-		config.numrows = 1;
+		editor_append_row(line, linelen);
 	}
 	free(line);
 	fclose(fp);
@@ -233,6 +241,7 @@ void init_editor() {
 	config.cx = 0;
 	config.cy = 0;
 	config.numrows = 0;
+	config.row = NULL;
 
 	if (get_window_size(&config.screenrows, &config.screencols) == -1)
 		die("get_window_size");

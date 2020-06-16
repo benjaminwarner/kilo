@@ -27,10 +27,10 @@ void editor_draw_rows(struct abuf *ab, struct editor_config *config) {
 	int version_line_row = config->screenrows / 3;
 	for (int y = 0; y < config->screenrows; ++y) {
 		if (y < config->numrows) {
-			int len = config->row.size;
+			int len = config->row[y].size;
 			if (len > config->screencols)
 				len = config->screencols;
-			ab_append(ab, config->row.chars, len);
+			ab_append(ab, config->row[y].chars, len);
 		} else if (y == version_line_row && config->numrows == 0) {
 			editor_draw_version_row(ab, config);
 		} else {
