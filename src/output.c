@@ -28,10 +28,12 @@ void editor_draw_rows(struct abuf *ab, struct editor_config *config) {
 	for (int y = 0; y < config->screenrows; ++y) {
 		int filerow = y + config->row_offset;
 		if (filerow < config->numrows) {
-			int len = config->row[filerow].size;
+			int len = config->row[filerow].size - config->col_offset;
+			if (len < 0)
+				len = 0;
 			if (len > config->screencols)
 				len = config->screencols;
-			ab_append(ab, config->row[filerow].chars, len);
+			ab_append(ab, &config->row[filerow].chars[config->col_offset], len);
 		} else if (y == version_line_row && config->numrows == 0) {
 			editor_draw_version_row(ab, config);
 		} else {
@@ -75,7 +77,7 @@ void editor_refresh_screen(struct editor_config *config) {
 	char buffer[32];
 	snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", 
 		(config->cy - config->row_offset) + 1, 
-		config->cx + 1);
+		(config->cx - config->col_offset) + 1);
 	ab_append(&ab, buffer, strlen(buffer));
 
 	ab_append(&ab, "\x1b[?25h", 6);
@@ -89,4 +91,8 @@ void editor_scroll(struct editor_config *config) {
 		config->row_offset = config->cy;
 	if (config->cy >= config->row_offset + config->screenrows)
 		config->row_offset = config->cy - config->screenrows + 1;
+	if (config->cx < config->col_offset)
+		config->col_offset = config->cx;
+	if (config->cx >= config->col_offset + config->screencols)
+		config->col_offset = config->cx - config->screencols + 1;
 }

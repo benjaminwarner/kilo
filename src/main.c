@@ -186,8 +186,7 @@ void editor_move_cursor(int key) {
 				--config.cx;
 			break;
 		case ARROW_RIGHT:
-			if (config.cx != config.screencols - 1)
-				++config.cx;
+			++config.cx;
 			break;
 		case ARROW_UP:
 			if (config.cy != 0)
@@ -241,6 +240,7 @@ void init_editor() {
 	config.cx = 0;
 	config.cy = 0;
 	config.row_offset = 0;
+	config.col_offset = 0;
 	config.numrows = 0;
 	config.row = NULL;
 
