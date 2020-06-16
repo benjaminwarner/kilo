@@ -1,5 +1,9 @@
 /*** includes ***/
 
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -144,15 +148,25 @@ int get_window_size(int *rows, int *cols) {
 
 /*** file i/o ***/
 
-void editor_open() {
-	char *line = "Hello, world!";
-	ssize_t linelen = 13;
+void editor_open(char *filename) {
+	FILE *fp = fopen(filename, "r");
+	if (!fp) die("fopen");
 
-	config.row.size = linelen;
-	config.row.chars = malloc(linelen + 1);
-	memcpy(config.row.chars, line, linelen);
-	config.row.chars[linelen] = '\0';
-	config.numrows = 1;
+	char *line = NULL;
+	size_t linecap = 0;
+	ssize_t linelen;
+	linelen = getline(&line, &linecap, fp);
+	if (linelen != -1) {
+		while (linelen > 0 && (line[linelen - 1] == '\n' || line[linelen - 1] == '\r'))
+			--linelen;
+		config.row.size = linelen;
+		config.row.chars = malloc(linelen + 1);
+		memcpy(config.row.chars, line, linelen);
+		config.row.chars[linelen] = '\0';
+		config.numrows = 1;
+	}
+	free(line);
+	fclose(fp);
 }
 
 /*** input ***/
@@ -228,7 +242,8 @@ int main(int argc, char *argv[]) {
 	enable_raw_mode();
 	atexit(disable_raw_mode);
 	init_editor();
-	editor_open();
+	if (argc >= 2) 
+		editor_open(argv[1]);
 
 	while (1) {
 		editor_refresh_screen(&config);
