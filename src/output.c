@@ -28,12 +28,12 @@ void editor_draw_rows(struct abuf *ab, struct editor_config *config) {
 	for (int y = 0; y < config->screenrows; ++y) {
 		int filerow = y + config->row_offset;
 		if (filerow < config->numrows) {
-			int len = config->row[filerow].size - config->col_offset;
+			int len = config->row[filerow].rsize - config->col_offset;
 			if (len < 0)
 				len = 0;
 			if (len > config->screencols)
 				len = config->screencols;
-			ab_append(ab, &config->row[filerow].chars[config->col_offset], len);
+			ab_append(ab, &config->row[filerow].render[config->col_offset], len);
 		} else if (y == version_line_row && config->numrows == 0) {
 			editor_draw_version_row(ab, config);
 		} else {

@@ -17,7 +17,9 @@ enum editor_key {
 
 typedef struct erow {
 	int size;
+	int rsize;
 	char *chars;
+	char *render;
 } erow;
 
 struct editor_config {
