@@ -185,6 +185,10 @@ void editor_move_cursor(int key) {
 		case ARROW_LEFT:
 			if (config.cx != 0)
 				--config.cx;
+			else if (config.cy > 0) {
+				--config.cy;
+				config.cx = config.row[config.cy].size;
+			}
 			break;
 		case ARROW_RIGHT:
 			if (row && config.cx < row->size)
