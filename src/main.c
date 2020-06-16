@@ -10,46 +10,16 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "editor.h"
+#include "output.h"
+
 /*** defines ***/
 
-#define VERSION_MAJOR 0
-#define VERSION_MINOR 0
-#define VERSION_PATCH 1
 #define CTRL_KEY(k) ((k) & 0x1f)
-
-enum editor_key {
-	ARROW_LEFT = 1000,
-	ARROW_RIGHT,
-	ARROW_UP,
-	ARROW_DOWN,
-	DELETE,
-	HOME,
-	END,
-	PAGE_UP,
-	PAGE_DOWN
-};
 
 /*** data ***/
 
-typedef struct erow {
-	int size;
-	char *chars;
-} erow;
-
-struct editor_config {
-	int cx, cy;
-	int screenrows;
-	int screencols;
-	int numrows;
-	erow row;
-	struct termios original_terminal;
-};
-
 struct editor_config config;
-
-/*** function defs ***/
-
-void editor_refresh_screen();
 
 /*** terminal ***/
 
@@ -185,85 +155,6 @@ void editor_open() {
 	config.numrows = 1;
 }
 
-/*** append buffer ***/
-
-struct abuf {
-	char *b;
-	int len;
-};
-
-#define ABUF_INIT {NULL, 0}
-
-void abAppend(struct abuf *ab, const char *s, int len) {
-	char *new = realloc(ab->b, ab->len + len);
-
-	if (new == NULL)
-		return;
-	
-	memcpy(&new[ab->len], s, len);
-	ab->b = new;
-	ab->len += len;
-}
-
-void abFree(struct abuf *ab) {
-	free(ab->b);
-}
-
-/*** output ***/
-
-void editor_draw_rows(struct abuf *ab) {
-	for (int y = 0; y < config.screenrows; y++) {
-		if (y >= config.numrows) {
-			if (y == config.screenrows / 3) {
-				char welcome[80];
-				int welcomelen = snprintf(welcome, sizeof(welcome),
-					"Kilo Editor -- version %d.%d.%d",
-					VERSION_MAJOR,
-					VERSION_MINOR,
-					VERSION_PATCH
-				);
-				if (welcomelen > config.screencols) welcomelen = config.screencols;
-				int padding = (config.screencols - welcomelen) / 2;
-				if (padding) {
-					abAppend(ab, "~", 1);
-					padding--;
-				}
-				while (padding--) abAppend(ab, " ", 1);
-				abAppend(ab, welcome, welcomelen);
-			} else {
-				abAppend(ab, "~", 1);
-			}
-		} else {
-			int len = config.row.size;
-			if (len > config.screencols)
-				len = config.screencols;
-			abAppend(ab, config.row.chars, len);
-		}
-
-		abAppend(ab, "\x1b[K", 3);
-		if (y < config.screenrows - 1)
-			abAppend(ab, "\r\n", 2);
-	}
-}
-
-void editor_refresh_screen() {
-	struct abuf ab = ABUF_INIT;
-
-	abAppend(&ab, "\x1b[?25l", 6);
-	abAppend(&ab, "\x1b[H", 3);
-
-	editor_draw_rows(&ab);
-
-	char buffer[32];
-	snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", config.cy + 1, config.cx + 1);
-	abAppend(&ab, buffer, strlen(buffer));
-
-	abAppend(&ab, "\x1b[?25h", 6);
-
-	write(STDOUT_FILENO, ab.b, ab.len);
-	abFree(&ab);
-}
-
 /*** input ***/
 
 void editor_move_cursor(int key) {
@@ -340,7 +231,7 @@ int main(int argc, char *argv[]) {
 	editor_open();
 
 	while (1) {
-		editor_refresh_screen();
+		editor_refresh_screen(&config);
 		editor_process_keypress();
 	}
 	return 0;
