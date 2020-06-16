@@ -26,11 +26,12 @@ void ab_free(struct abuf *ab) {
 void editor_draw_rows(struct abuf *ab, struct editor_config *config) {
 	int version_line_row = config->screenrows / 3;
 	for (int y = 0; y < config->screenrows; ++y) {
-		if (y < config->numrows) {
-			int len = config->row[y].size;
+		int filerow = y + config->row_offset;
+		if (filerow < config->numrows) {
+			int len = config->row[filerow].size;
 			if (len > config->screencols)
 				len = config->screencols;
-			ab_append(ab, config->row[y].chars, len);
+			ab_append(ab, config->row[filerow].chars, len);
 		} else if (y == version_line_row && config->numrows == 0) {
 			editor_draw_version_row(ab, config);
 		} else {
@@ -62,6 +63,8 @@ void editor_draw_version_row(struct abuf *ab, struct editor_config *config) {
 }
 
 void editor_refresh_screen(struct editor_config *config) {
+	editor_scroll(config);
+
 	struct abuf ab = ABUF_INIT;
 
 	ab_append(&ab, "\x1b[?25l", 6);
@@ -70,11 +73,20 @@ void editor_refresh_screen(struct editor_config *config) {
 	editor_draw_rows(&ab, config);
 
 	char buffer[32];
-	snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", config->cy + 1, config->cx + 1);
+	snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", 
+		(config->cy - config->row_offset) + 1, 
+		config->cx + 1);
 	ab_append(&ab, buffer, strlen(buffer));
 
 	ab_append(&ab, "\x1b[?25h", 6);
 
 	write(STDOUT_FILENO, ab.b, ab.len);
 	ab_free(&ab);
+}
+
+void editor_scroll(struct editor_config *config) {
+	if (config->cy < config->row_offset)
+		config->row_offset = config->cy;
+	if (config->cy >= config->row_offset + config->screenrows)
+		config->row_offset = config->cy - config->screenrows + 1;
 }

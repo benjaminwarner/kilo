@@ -194,7 +194,7 @@ void editor_move_cursor(int key) {
 				--config.cy;
 			break;
 		case ARROW_DOWN:
-			if (config.cy != config.screenrows - 1)
+			if (config.cy < config.numrows)
 				++config.cy;
 			break;
 	}
@@ -240,6 +240,7 @@ void editor_process_keypress() {
 void init_editor() {
 	config.cx = 0;
 	config.cy = 0;
+	config.row_offset = 0;
 	config.numrows = 0;
 	config.row = NULL;
 

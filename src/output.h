@@ -16,5 +16,6 @@ void ab_free(struct abuf *ab);
 void editor_draw_rows(struct abuf *ab, struct editor_config *config);
 void editor_draw_version_row(struct abuf *ab, struct editor_config *config);
 void editor_refresh_screen(struct editor_config *config);
+void editor_scroll(struct editor_config *config);
 
 #endif
