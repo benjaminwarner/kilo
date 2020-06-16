@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -30,10 +31,17 @@ enum editor_key {
 
 /*** data ***/
 
+typedef struct erow {
+	int size;
+	char *chars;
+} erow;
+
 struct editor_config {
 	int cx, cy;
 	int screenrows;
 	int screencols;
+	int numrows;
+	erow row;
 	struct termios original_terminal;
 };
 
@@ -164,6 +172,19 @@ int get_window_size(int *rows, int *cols) {
 	return 0;
 }
 
+/*** file i/o ***/
+
+void editor_open() {
+	char *line = "Hello, world!";
+	ssize_t linelen = 13;
+
+	config.row.size = linelen;
+	config.row.chars = malloc(linelen + 1);
+	memcpy(config.row.chars, line, linelen);
+	config.row.chars[linelen] = '\0';
+	config.numrows = 1;
+}
+
 /*** append buffer ***/
 
 struct abuf {
@@ -192,24 +213,31 @@ void abFree(struct abuf *ab) {
 
 void editor_draw_rows(struct abuf *ab) {
 	for (int y = 0; y < config.screenrows; y++) {
-		if (y == config.screenrows / 3) {
-			char welcome[80];
-			int welcomelen = snprintf(welcome, sizeof(welcome),
-				"Kilo Editor -- version %d.%d.%d",
-				VERSION_MAJOR,
-				VERSION_MINOR,
-				VERSION_PATCH
-			);
-			if (welcomelen > config.screencols) welcomelen = config.screencols;
-			int padding = (config.screencols - welcomelen) / 2;
-			if (padding) {
+		if (y >= config.numrows) {
+			if (y == config.screenrows / 3) {
+				char welcome[80];
+				int welcomelen = snprintf(welcome, sizeof(welcome),
+					"Kilo Editor -- version %d.%d.%d",
+					VERSION_MAJOR,
+					VERSION_MINOR,
+					VERSION_PATCH
+				);
+				if (welcomelen > config.screencols) welcomelen = config.screencols;
+				int padding = (config.screencols - welcomelen) / 2;
+				if (padding) {
+					abAppend(ab, "~", 1);
+					padding--;
+				}
+				while (padding--) abAppend(ab, " ", 1);
+				abAppend(ab, welcome, welcomelen);
+			} else {
 				abAppend(ab, "~", 1);
-				padding--;
 			}
-			while (padding--) abAppend(ab, " ", 1);
-			abAppend(ab, welcome, welcomelen);
 		} else {
-			abAppend(ab, "~", 1);
+			int len = config.row.size;
+			if (len > config.screencols)
+				len = config.screencols;
+			abAppend(ab, config.row.chars, len);
 		}
 
 		abAppend(ab, "\x1b[K", 3);
@@ -299,6 +327,7 @@ void editor_process_keypress() {
 void init_editor() {
 	config.cx = 0;
 	config.cy = 0;
+	config.numrows = 0;
 
 	if (get_window_size(&config.screenrows, &config.screencols) == -1)
 		die("get_window_size");
@@ -308,6 +337,7 @@ int main(int argc, char *argv[]) {
 	enable_raw_mode();
 	atexit(disable_raw_mode);
 	init_editor();
+	editor_open();
 
 	while (1) {
 		editor_refresh_screen();
