@@ -77,7 +77,7 @@ void editor_refresh_screen(struct editor_config *config) {
 	char buffer[32];
 	snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", 
 		(config->cy - config->row_offset) + 1, 
-		(config->cx - config->col_offset) + 1);
+		(config->rx - config->col_offset) + 1);
 	ab_append(&ab, buffer, strlen(buffer));
 
 	ab_append(&ab, "\x1b[?25h", 6);
@@ -87,12 +87,29 @@ void editor_refresh_screen(struct editor_config *config) {
 }
 
 void editor_scroll(struct editor_config *config) {
+	config->rx = 0;
+	if (config->cy < config->numrows)
+		config->rx = editor_row_cx_to_rx(&config->row[config->cy], config->cx);
+
 	if (config->cy < config->row_offset)
 		config->row_offset = config->cy;
+
 	if (config->cy >= config->row_offset + config->screenrows)
 		config->row_offset = config->cy - config->screenrows + 1;
-	if (config->cx < config->col_offset)
-		config->col_offset = config->cx;
-	if (config->cx >= config->col_offset + config->screencols)
-		config->col_offset = config->cx - config->screencols + 1;
+
+	if (config->rx < config->col_offset)
+		config->col_offset = config->rx;
+
+	if (config->rx >= config->col_offset + config->screencols)
+		config->col_offset = config->rx - config->screencols + 1;
+}
+
+int editor_row_cx_to_rx(erow *row, int cx) {
+	int rx = 0;
+	for (int j = 0; j < cx; ++j) {
+		if (row->chars[j] == '\t')
+			rx += (TAB_STOP - 1) - (rx % TAB_STOP);
+		++rx;
+	}
+	return rx;
 }

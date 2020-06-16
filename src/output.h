@@ -3,6 +3,8 @@
 
 #include "editor.h"
 
+#define TAB_STOP 4
+
 struct abuf {
 	char *b;
 	int len;
@@ -17,5 +19,7 @@ void editor_draw_rows(struct abuf *ab, struct editor_config *config);
 void editor_draw_version_row(struct abuf *ab, struct editor_config *config);
 void editor_refresh_screen(struct editor_config *config);
 void editor_scroll(struct editor_config *config);
+
+int editor_row_cx_to_rx(erow *row, int cx);
 
 #endif

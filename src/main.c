@@ -281,6 +281,7 @@ void editor_process_keypress() {
 void init_editor() {
 	config.cx = 0;
 	config.cy = 0;
+	config.rx = 0;
 	config.row_offset = 0;
 	config.col_offset = 0;
 	config.numrows = 0;
